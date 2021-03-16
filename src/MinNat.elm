@@ -1,220 +1,443 @@
 module MinNat exposing
     ( MinNat
-    , add
-    , addN
-    , div
-    , equalOrLessThan
-    , fromAbs
-    , fromAtLeast
-    , fromIn
-    , fromN
-    , isMin
-    , mul
-    , sub
-    , subN
-    , toInt
-    , toPower
-    , vs
+    , atMost, abs, intAtLeast
+    , isIntAtLeast, is, isAtLeast, isAtMost
+    , toInt, n, lowerMin
+    , addN, subN, add, subIn, mul, div, remainderBy, toPower
+    , range
     )
 
+{-| A Nat which is at least some minimum.
+
+@docs MinNat
+
+
+## add information
+
+@docs atMost, abs, intAtLeast
+
+
+### compare
+
+@docs isIntAtLeast, is, isAtLeast, isAtMost
+
+
+## drop information
+
+@docs toInt, n, lowerMin
+
+
+## modify
+
+@docs addN, subN, add, subIn, mul, div, remainderBy, toPower
+
+
+## extra
+
+@docs range
+
+-}
+
 import InNat as InNat exposing (InNat)
-import Internal as Internal
+import Internal
 import N.Nat.Type exposing (..)
 import N.Type exposing (..)
 import NNat exposing (NNat)
 
 
-{-| `NatFrom minimum` meaning a natural number which is at least `minimum`.
+{-| `NatFrom min` meaning a natural number which is at least `min`.
+
+       ↓ minimum
+    ⨯ [✓ ✓ ✓ ✓ ✓ ✓ ✓...
 
 Any natural number
 
-    NatFrom N0Nat
+    MinNat Nat0
 
 A number, bigger than 4
 
-    NatFrom N5Nat
+    MinNat Nat5
 
 -}
-type MinNat minimum
-    = NatFrom Int
+type alias MinNat min =
+    Internal.MinNat min
+
+
+newMin : MinNat min -> MinNat newMin
+newMin =
+    map identity
+
+
+map : (Int -> Int) -> MinNat min -> MinNat resultMin
+map update =
+    toInt >> update >> Internal.MinNat
 
 
 
---## transform
+--## drop information
 
 
-toInt : MinNat minimum -> Int
-toInt natAtLeast =
-    natAtLeast |> (\(NatFrom int) -> int)
+{-| Convert a `MinNat` to an `Int`.
 
+    MinNat.n nat4 |> MinNat.toInt --> 4
 
+    compare a b =
+        compare (MinNat.toInt a) (MinNat.toInt b)
 
--- ## create
-
-
-fromAbs : Int -> MinNat N0Nat
-fromAbs int =
-    abs int |> NatFrom
-
-
-fromAtLeast : NNat (N n Is difference) -> Int -> MinNat n
-fromAtLeast minimum int =
-    max (NNat.toInt minimum) int |> NatFrom
-
-
-fromN : NNat (N n Is difference) -> MinNat n
-fromN nNat =
-    NNat.toInt nNat |> NatFrom
-
-
-fromIn : InNat minimum maximum -> MinNat minimum
-fromIn natIn =
-    InNat.toInt natIn |> NatFrom
-
-
-
--- ## scan
-
-
-{-| Guaranteed.
 -}
-isMin :
-    NNat (N alsoValidMinimum Is (Difference currentMinusAlsoValidMinimum To minimum))
-    -> MinNat minimum
-    -> MinNat alsoValidMinimum
-isMin alsoValidMinimum =
-    \inRange -> NatFrom (toInt inRange)
+toInt : MinNat min -> Int
+toInt =
+    Internal.minNatToInt
+
+
+{-| Convert an exact `NNat n` to a `MinNat n (n + a)`.
+
+    MinNat.n nat4
+    --> is of type MinNat Nat4 (Nat4Plus a)
+
+-}
+n : NNat (N n Is difference) -> MinNat n
+n nNat =
+    NNat.toInt nNat |> Internal.MinNat
+
+
+{-| Set the minimum lower.
+-}
+lowerMin :
+    NNat (N alsoValidmin Is (Difference currentMinusAlsoValidmin To min))
+    -> MinNat min
+    -> MinNat alsoValidmin
+lowerMin alsoValidmin =
+    newMin
+
+
+
+--## add information
+
+
+{-| **Cap** the `MinNat` to at most a upper limit.
+-}
+atMost :
+    NNat (N max Is (Difference a To maxPlusA))
+    -> { min : NNat (N min Is (Difference range To max)) }
+    -> MinNat min
+    -> InNat min maxPlusA
+atMost max min =
+    isAtMost max
+        min
+        { greater = \_ -> max |> NNat.toInt |> Internal.InNat
+        , equalOrLess = identity
+        }
+
+
+{-| The absolute value of an `Int`, which is at least `Nat0`.
+
+    MinNat.abs 16 --> MinNat 16
+
+    MinNat.abs -4 --> MinNat 4
+
+Really only use this if you want the absolute value.
+
+    badLength list =
+        List.length >> MinNat.abs
+
+    goodLength =
+        List.foldl
+            (\_ -> MinNat.addN nat1 >> MinNat.lowerMin nat0)
+            (MinNat.n nat0)
+
+If something like this isn't possible, use `[MinNat.intAtLeast][MinNat#intAtLeast] nat0`!
+
+-}
+abs : Int -> MinNat Nat0
+abs int =
+    Basics.abs int |> Internal.MinNat
+
+
+{-| If the `Int >= a minimum`, `Just the MinNat`, else `Nothing`.
+
+    4 |> MinNat.isIntAtLeast nat5 --> Nothing
+
+    1234 |> MinNat.isIntAtLeast nat5 --> Just (NatIn 1234)
+
+-}
+isIntAtLeast : NNat (N min Is difference) -> Int -> Maybe (MinNat n)
+isIntAtLeast min int =
+    if int >= NNat.toInt min then
+        Just (Internal.MinNat int)
+
+    else
+        Nothing
+
+
+{-| A `MinNat` from an `Int`; if the `Int < minimum`, `minimum` is returned.
+
+    9 |> MinNat.intAtLeast nat3 --> MinNat 9
+
+    0 |> MinNat.intAtLeast nat3 --> MinNat 3
+
+You can also use this if you know an `Int` must be at least `minimum`.
+
+But avoid it if you can do better, like
+
+    goodLength =
+        List.foldl
+            (\_ -> MinNat.addN nat1 >> MinNat.lowerMin nat0)
+            (MinNat.n nat0)
+
+If you want to handle the case `< minimum` yourself, use [`MinNat.isIntAtLeast`][MinNat#isIntAtLeast].
+
+-}
+intAtLeast : NNat (N n Is difference) -> Int -> MinNat n
+intAtLeast minimum int =
+    isIntAtLeast minimum int
+        |> Maybe.withDefault (n minimum)
 
 
 
 -- ## modify
 
 
+{-| Add a `MinNat`. The second argument is the minimum if the added `MinNat`.
+
+    (nat5 |> MinNat.n)
+        |> MinNat.add atLeast2 nat2
+
+-}
 add :
-    MinNat addedMinimum
-    -> NNat (N addedMinimum Is (Difference minimum To sumMinimum))
-    -> MinNat minimum
-    -> MinNat sumMinimum
-add natAtLeast addedMinimum =
-    \atLeast -> toInt atLeast + toInt natAtLeast |> NatFrom
+    MinNat addedMin
+    -> NNat (N addedMin Is (Difference min To summin))
+    -> MinNat min
+    -> MinNat summin
+add addedMinNat addedMin =
+    map ((+) (toInt addedMinNat))
 
 
+{-| Add an exact `NNat`.
+
+    (nat5 |> MinNat.n)
+        |> MinNat.addN nat2
+    --> MinNat 7
+
+-}
 addN :
-    NNat (N n Is (Difference minimum To minimumPlusN))
-    -> MinNat minimum
-    -> MinNat minimumPlusN
+    NNat (N n Is (Difference min To minPlusN))
+    -> MinNat min
+    -> MinNat minPlusN
 addN nNat =
-    \atLeast -> toInt atLeast + NNat.toInt nNat |> NatFrom
+    map ((+) (NNat.toInt nNat))
 
 
-sub :
-    MinNat subtractedMinimum
-    -> NNat (N subtractedMinimum Is (Difference differenceMinimum To minimum))
-    -> MinNat minimum
-    -> MinNat differenceMinimum
-sub natAtLeast subtractedMinimum =
-    \atLeast -> toInt atLeast - toInt natAtLeast |> NatFrom
+{-| Subtract a `InNat`. The second argument is the maximum if the subtracted `InNat`.
+
+    (nat5 |> MinNat.n)
+        |> MinNat.subIn inNat0To5 itsMaximum
+
+-}
+subIn :
+    InNat subtractedMin subtractedMax
+    -> NNat (N subtractedMax Is (Difference differenceMin To min))
+    -> MinNat min
+    -> MinNat differenceMin
+subIn subtractedInNat subtractedMax =
+    map (\base -> base - Internal.inNatToInt subtractedInNat)
 
 
+{-| Subtract an exact `NNat`.
+
+    (nat7 |> MinNat.n)
+        |> MinNat.subN nat2
+    --> MinNat 5
+
+-}
 subN :
-    NNat (N n Is (Difference minimumMnusN To minimum))
-    -> MinNat minimum
-    -> MinNat minimumMinusN
+    NNat (N n Is (Difference minMinusN To min))
+    -> MinNat min
+    -> MinNat minMinusN
 subN nNat =
-    \atLeast -> toInt atLeast - NNat.toInt nNat |> NatFrom
+    map (\base -> base - NNat.toInt nNat)
 
 
-mul2 :
-    NNat (N minimum Is (Difference minimum To minimumTimes2))
-    -> MinNat minimum
-    -> MinNat minimumTimes2
-mul2 minimum =
-    \atLeast -> toInt atLeast * 2 |> NatFrom
+{-| Multiply by a `MinNat` >= 1.
+We can't compute the highest possiblenew minimum,
+we only know that if `a >= 1  →  x * a >= x`
 
+    five |> MinNat.mul two
+    --> MinNat 10, but the type is MinNat Nat5
 
+    two |> MinNat.mul five
+    --> MinNat 10, but the type is MinNat Nat2
+
+    two = nat2 |> MinNat.n
+
+    five = nat5 |> MinNat.n
+
+-}
 mul :
-    MinNat (N1NatPlus multipliedMinimumMinus1)
-    -> MinNat minimum
-    -> MinNat minimum
-mul natAtLeast =
-    \atLeast -> toInt atLeast * toInt natAtLeast |> NatFrom
+    MinNat (Nat1Plus multipliedMinMinus1)
+    -> MinNat min
+    -> MinNat min
+mul minNat =
+    map ((*) (toInt minNat))
 
 
+{-| Divide (`//`) by a `MinNat`. `div 0` is impossible.
+
+    MinNat.n nat7 |> MinNat.div (MinNat.n nat3)
+    --> MinNat 2 of type MinNat Nat0
+
+-}
 div :
-    MinNat (N1NatPlus minimumMinus1)
-    -> MinNat minimum
-    -> MinNat N0Nat
-div natAtLeast =
-    \atLeast -> toInt atLeast // toInt natAtLeast |> NatFrom
+    MinNat (Nat1Plus minMinus1)
+    -> MinNat min
+    -> MinNat Nat0
+div minNat =
+    map (\base -> base // toInt minNat)
 
 
+{-| The remainder after division. `remainderBy 0` is impossible.
+
+    MinNat.n nat7 |> MinNat.remainderBy (MinNat.n nat3)
+    --> MinNat Nat0
+
+-}
+remainderBy :
+    MinNat (Nat1Plus dMinMinus1)
+    -> MinNat min
+    -> MinNat Nat0
+remainderBy minNat =
+    map (Basics.remainderBy (minNat |> Internal.minNatToInt))
+
+
+{-| The `MinNat ^ a MinNat`.
+We can't compute the highest possible new minimum,
+we only know that if `a >= 1  →  x ^ a >= x`
+
+    five |> MinNat.toPower two
+    --> MinNat 25, but the type is MinNat Nat5
+
+    two |> MinNat.mul five
+    --> MinNat 25, but the type is MinNat Nat2
+
+    two = nat2 |> MinNat.n
+
+    five = nat5 |> MinNat.n
+
+-}
 toPower :
-    MinNat (N1NatPlus minimumMinus1)
-    -> MinNat minimum
-    -> MinNat minimum
+    MinNat (Nat1Plus minMinus1)
+    -> MinNat min
+    -> MinNat min
 toPower power =
-    \atLeast -> toInt atLeast ^ toInt power |> NatFrom
+    \minNat -> toInt minNat ^ toInt power |> Internal.MinNat
 
 
 
--- ## scan
+-- ## compare
 
 
-vs :
-    ( NNat (N (N1NatPlus triedMinus1) Is (Difference (N1NatPlus triedToMinimumMinus1) To minimum))
-    , NNat (N (N1NatPlus triedMinus1) Is (Difference (N1NatPlus aMinus1) To (N1NatPlus triedMinus1PlusA)))
-    )
+{-| Compared to an exact `NNat`.
+-}
+is :
+    NNat (N (Nat1Plus triedMinus1) Is (Difference (Nat1Plus aMinus1) To (Nat1Plus triedMinus1PlusA)))
+    -> { min : NNat (N min Is (Difference lessRange To triedMinus1)) }
     ->
         { equal : () -> result
-        , less : InNat minimum triedMinus1PlusA -> result
-        , greater : MinNat (N2NatPlus triedMinus1) -> result
+        , less : InNat min triedMinus1PlusA -> result
+        , greater : MinNat (Nat2Plus triedMinus1) -> result
         }
-    -> MinNat minimum
+    -> MinNat min
     -> result
-vs tried cases =
-    \atLeast ->
-        case compare (toInt atLeast) (NNat.toInt (tried |> Tuple.first)) of
+is tried min cases =
+    \minNat ->
+        case compare (toInt minNat) (NNat.toInt tried) of
             EQ ->
                 .equal cases ()
 
             LT ->
-                .less cases (toInt atLeast |> Internal.InNat)
+                .less cases (toInt minNat |> Internal.InNat)
 
             GT ->
-                .greater cases (toInt atLeast |> NatFrom)
+                .greater cases (newMin minNat)
 
 
-equalOrGreaterThan :
-    NNat (N tried Is (Difference a To (N1NatPlus triedMinus1PlusA)))
-    -> NNat (N minimum Is (Difference triedToMinimum To tried))
+{-| Is the `MinNat`
+
+  - `equalOrGreater` than a `NNat` or
+
+  - `less`?
+
+```
+factorialHelp : MinNat min -> MinNat Nat1
+factorialHelp =
+    MinNat.lowerMin nat0
+        >> MinNat.isAtLeast nat1
+            { min = nat0 }
+            { less = \_ -> MinNat.n nat1
+            , equalOrGreater =
+                \oneOrGreater ->
+                    oneOrGreater
+                        |> MinNat.mul
+                            (factorialHelp
+                                (oneOrGreater |> MinNat.subN nat1)
+                            )
+            }
+```
+
+-}
+isAtLeast :
+    NNat (N triedMin Is (Difference a To (Nat1Plus triedMinMinus1PlusA)))
+    -> { min : NNat (N min Is (Difference (Nat1Plus lessRange) To triedMin)) }
     ->
-        { equalOrGreater : MinNat (N1NatPlus tried) -> result
-        , less : InNat minimum triedMinus1PlusA -> result
+        { less : InNat min triedMinMinus1PlusA -> result
+        , equalOrGreater : MinNat triedMin -> result
         }
-    -> MinNat minimum
+    -> MinNat min
     -> result
-equalOrGreaterThan tried minimum cases =
-    \atLeast ->
-        if toInt atLeast >= NNat.toInt tried then
-            .equalOrGreater cases (toInt atLeast |> NatFrom)
+isAtLeast triedLowerLimit min cases =
+    \minNat ->
+        if toInt minNat >= NNat.toInt triedLowerLimit then
+            .equalOrGreater cases (newMin minNat)
 
         else
-            .less cases (toInt atLeast |> Internal.InNat)
+            .less cases (toInt minNat |> Internal.InNat)
 
 
-equalOrLessThan :
-    NNat (N tried Is (Difference a To triedPlusA))
-    -> NNat (N minimum Is (Difference triedToMinimum To tried))
+{-| Is the `MinNat`
+
+  - `equalOrLess` than a `NNat` or
+
+  - `greater`?
+
+-}
+isAtMost :
+    NNat (N atMostMin Is (Difference a To atMostMinPlusA))
+    -> { min : NNat (N min Is (Difference minToAtMostMin To atMostMin)) }
     ->
-        { equalOrLess : InNat minimum triedPlusA -> result
-        , greater : MinNat (N1NatPlus tried) -> result
+        { equalOrLess : InNat min atMostMinPlusA -> result
+        , greater : MinNat atMostMin -> result
         }
-    -> MinNat minimum
+    -> MinNat min
     -> result
-equalOrLessThan tried minimum cases =
-    \atLeast ->
-        if toInt atLeast <= NNat.toInt tried then
-            .equalOrLess cases (toInt atLeast |> Internal.InNat)
+isAtMost triedUpperLimit min cases =
+    \minNat ->
+        if toInt minNat <= NNat.toInt triedUpperLimit then
+            .equalOrLess cases (toInt minNat |> Internal.InNat)
 
         else
-            .greater cases (toInt atLeast |> NatFrom)
+            .greater cases (newMin minNat)
+
+
+
+-- ## extra
+
+
+{-| `MinNat`s from a first `InNat` to a last `MinNat`.
+-}
+range :
+    InNat firstMin lastMin
+    -> MinNat lastMin
+    -> List (MinNat firstMin)
+range first last =
+    List.range (InNat.toInt first) (toInt last)
+        |> List.map Internal.MinNat
