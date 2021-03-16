@@ -7,7 +7,7 @@
 
 ## What you can do
 
-- share your thoughts
+- share your thoughts!
 - extend the feature set
 
 ### Summary Guide
