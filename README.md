@@ -24,7 +24,7 @@ elm install indique/elm-nat-in-range
 import MinNat exposing (MinNat)
 import InNat exposing (InNat)
 import NNat exposing (NNat)
-import Nats exposing (..) --nat0 to nat192
+import NNats exposing (..) --nat0 to nat192
 
 import N.Type exposing (..)
 import N.Nat.Type exposing (..)
@@ -43,8 +43,8 @@ rgb : Float -> Float -> Float -> Color
 This is common, but _the one implementing_ the function has to handle the case where a value is not between 0 and 1.
 
 ```elm
-rgbPer100
-    : InNat redMin Nat100
+rgbPer100 :
+    InNat redMin Nat100
     -> InNat greenMin Nat100
     -> InNat blueMin Nat100
     -> Color
