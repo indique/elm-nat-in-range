@@ -108,11 +108,11 @@ This forms an infinite loop if we call `intFactorial -1`...
 Let's disallow negative numbers here!
 
 ```elm
-natFactorial : MinNat Nat0 -> MinNat Nat1
+factorial : MinNat min -> MinNat Nat1
 ```
 Says: for every natural number `n >= 0`, `n! >= 1`.
 ```elm
-natFactorial =
+factorialHelp =
     MinNat.isAtLeast nat1
         { min = nat0 } -- the minimum of the x
         { less = \_ -> MinNat.n nat1 -- x < 1 ? → then 1
@@ -120,7 +120,7 @@ natFactorial =
             \oneOrGreater -> --we now know it is a MinNat Nat1
                 oneOrGreater
                     |> MinNat.mul
-                        (natFactorial
+                        (factorialHelp
                             (oneOrGreater |> MinNat.subN nat1)
                             -- so we can safely subtract 1 👍
                         )
@@ -128,16 +128,17 @@ natFactorial =
 ```
 As the minimum is allowed to be anything `>= 0`:
 ```
-factorial : MinNat min -> MinNat Nat1
 factorial =
-    MinNat.lowerMin nat0 >> natFactorial
+    MinNat.lowerMin nat0 >> factorialHelp
 ```
 
 → `factorial (MinNat.n nat4) |> MinNat.toInt --> 24`
 
-→ There is no way to put a negative in.
+→ There is no way to put a negative number in.
 
-We can do even better.
+→ We have the extra promise, that every result `is >= 1`
+
+We can do even better!
 We know that `!19` is already bigger than the maximum safe `Int` `2^53 - 1`.
 
 ```elm
@@ -173,7 +174,7 @@ safeFactorial =
   rgb : InNat redMin Nat100 --...
   ```
 
-Take a look at [`elm-n-array`][elm-n-array] to see `InNat` in action!
+Take a look at [`elm-array-in-range`][elm-array-in-range] to see `InNat` in action!
 
 [elm-n-nat]: https://package.elm-lang.org/packages/indique/elm-n-nat/latest/
-[elm-n-array]: https://package.elm-lang.org/packages/indique/elm-n-array/latest/
+[elm-array-in-range]: https://package.elm-lang.org/packages/indique/elm-array-in-range/latest/
