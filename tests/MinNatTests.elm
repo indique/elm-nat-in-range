@@ -9,7 +9,7 @@ import MinNat exposing (MinNat)
 import N.Nat.Type exposing (..)
 import N.Type exposing (..)
 import NNat exposing (NNat)
-import Nats exposing (..)
+import NNats exposing (..)
 import Test exposing (Test, describe, test)
 
 
