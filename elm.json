@@ -3,7 +3,7 @@
     "name": "indique/elm-nat-in-range",
     "summary": "natural number with a minimum (& maximum) in the type",
     "license": "MIT",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "exposed-modules": [
         "InNat",
         "MinNat"
