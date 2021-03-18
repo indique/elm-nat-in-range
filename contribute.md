@@ -8,7 +8,7 @@
 ## What you can do
 
 - share your thoughts!
-- extend the feature set
+- adding operations that might be useful
 
 ### Summary Guide
 

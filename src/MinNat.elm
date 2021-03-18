@@ -1,7 +1,7 @@
 module MinNat exposing
     ( MinNat
     , atMost, abs, intAtLeast
-    , isIntAtLeast, is, isAtLeast, isAtMost
+    , isIntAtLeast, is, isAtLeast, isAtMost, theGreater, theSmaller
     , toInt, n, lowerMin
     , addN, subN, add, subIn, mul, div, remainderBy, toPower
     , range
@@ -19,7 +19,7 @@ module MinNat exposing
 
 ### compare
 
-@docs isIntAtLeast, is, isAtLeast, isAtMost
+@docs isIntAtLeast, is, isAtLeast, isAtMost, theGreater, theSmaller
 
 
 ## drop information
@@ -426,6 +426,34 @@ isAtMost triedUpperLimit min cases =
 
         else
             .greater cases (newMin minNat)
+
+
+{-| The greater of 2 `MinNat`s. Works just like [Basics.max][Basics#max].
+
+    MinNat.theGreater
+        (nat3 |> MinNat.n)
+        (nat4 |> MinNat.n |> MinNat.lowerMin nat3)
+    --> MinNat 4
+
+-}
+theGreater : MinNat min -> MinNat min -> MinNat min
+theGreater a b =
+    Basics.max (toInt a) (toInt b)
+        |> Internal.MinNat
+
+
+{-| The smaller of 2 `MinNat`s. Works just like [Basics.min][Basics#min].
+
+    MinNat.theSmaller
+        (nat3 |> MinNat.n)
+        (nat4 |> MinNat.n |> MinNat.lowerMin nat3)
+    --> MinNat 3
+
+-}
+theSmaller : MinNat min -> MinNat min -> MinNat min
+theSmaller a b =
+    Basics.min (toInt a) (toInt b)
+        |> Internal.MinNat
 
 
 
