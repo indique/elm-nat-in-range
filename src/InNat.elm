@@ -570,10 +570,10 @@ dropMax =
 -- ## more
 
 
-{-| `InNat`s from a first to an exact last value.
+{-| `InNat`s from a first to a last value.
 
     from3To10 =
-        InNat.range nat3 nat10
+        InNat.range (nat3 |> InNat.n) (nat10 |> InNat.n)
 
 -}
 range :
